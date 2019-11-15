@@ -1,0 +1,369 @@
+
+ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 1
+
+
+
+
+
+       MCS-51 Family Macro Assembler   A S E M - 5 1   V 1.3
+       =====================================================
+
+
+
+	Source File:	d:\Code\school\Sophomore\8051\20191007-Timer\6_timer.a51
+	Object File:	d:\Code\school\Sophomore\8051\20191007-Timer\6_timer.hex
+	List File:	d:\Code\school\Sophomore\8051\20191007-Timer\6_timer.lst
+
+
+
+ Line  I  Addr  Code            Source
+
+    1:				; Example program 04: 7-Segment LED scanned by Time 0
+    2:				; Chin-Shiuh Shieh
+    3:				; 2003-03-09
+    4:				;
+    5:				; Memory Allocation
+    6:		N      0030	LED_DATA   		EQU		30h     ;Data Byte to be displayed
+    7:		N      0000	NIBBLE  		EQU		00h     ;Bit for Nibble Control
+    8:				; Pin Assignment
+    9:		D      0080	LED_PORT		EQU		P0
+   10:		B      00A0	HIGH_NIBBLE		EQU		P2.0
+   11:		B      00A1	LOW_NIBBLE		EQU		P2.1
+   12:		B      00A3	BUTTON_start		EQU		P2.3
+   13:		B      00A4	BUTTON_Time		EQU		P2.4
+   14:		N      0021	TIME_RAM                EQU             21h
+   15:		N      0020	START_RAM               EQU             20h
+   16:		N      0029	DELAY_1S                EQU             29h
+   17:		B      00A2	BUZZER                  EQU             P2.2
+   18:				;
+   19:		N      0000	PROG	EQU		0000h
+   20:		N      0000			ORG		PROG+0000h
+   21:	  0000	80 2E				SJMP	START
+   22:				;Interrupt Vector Table
+   23:		N      0003			ORG		PROG+0003h
+   24:	  0003	12 00 AC			LCALL	INT0_ISR
+   25:	  0006	32				RETI
+   26:		N      000B			ORG		PROG+000Bh
+   27:	  000B	12 00 56			LCALL	T0_ISR
+   28:	  000E	32				RETI
+   29:		N      0013			ORG		PROG+0013h
+   30:	  0013	12 00 AF			LCALL	INT1_ISR
+   31:	  0016	32				RETI
+   32:		N      001B			ORG		PROG+001Bh
+   33:	  001B	12 00 90			LCALL	T1_ISR
+   34:	  001E	32				RETI
+   35:		N      0023			ORG		PROG+0023h
+   36:	  0023	12 00 B0			LCALL	UART_ISR
+   37:	  0026	32				RETI
+   38:				;
+   39:		N      0030			ORG		PROG+0030h
+   40:	  0030			START:
+   41:	  0030	D2 00		        SETB SMOD
+					     ^
+			  @@@@@ symbol not defined @@@@@
+
+ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 2
+
+
+
+ Line  I  Addr  Code            Source
+
+
+   42:	  0032	75 29 00	        MOV     DELAY_1S, #00h
+   43:	  0035	75 30 00		MOV	LED_DATA,#00h
+   44:	  0038	75 89 11	        MOV     TMOD,#00010001b	; Set Timer to work in Mode 1 (16-bit Timer)
+   45:	  003B	75 20 00	        MOV	START_RAM,#00h
+   46:	  003E	75 21 00	        MOV     TIME_RAM ,#00h
+   47:	  0041	D2 A2		        SETB    BUZZER
+   48:
+   49:	  0043	D2 A9		        SETB	ET0				; Enable Timer 0 Interrupt
+   50:	  0045	D2 8C		        SETB	TR0				; Start Timer 0
+   51:	  0047	D2 AB		        SETB	ET1				; Enable Timer 0 Interrupt
+   52:	  0049	D2 8E		        SETB	TR1				; Start Timer 0
+   53:
+   54:	  004B	D2 AF		        SETB	EA				; Enable Interrupt
+   55:
+   56:	  004D	D2 A4		        SETB    BUTTON_Time
+   57:	  004F	D2 A3		        SETB    BUTTON_start
+   58:				       ; SETB	IT0
+   59:					;SETB	EX0
+   60:					;SETB	IT1
+   61:					;SETB	EX1
+   62:	  0051			LOOP:
+   63:	  0051	12 00 CE	        LCALL BUTTION_CLICK
+   64:	  0054	80 FB		        SJMP	LOOP
+   65:
+   66:				;
+   67:	  0056			T0_ISR: ;Timer 0
+   68:	  0056	75 8C FC	        MOV     TH0,#0FCh   ; Timer 0 Interrupt will be generated
+   69:	  0059	75 8A 18	        MOV     TL0,#018h   ; for every 1mS
+   70:	  005C	B2 00		        CPL     NIBBLE
+   71:	  005E	20 00 0F	        JB      NIBBLE,SHOW_HIGH
+   72:	  0061			SHOW_LOW:
+   73:	  0061	D2 A0		        SETB    HIGH_NIBBLE
+   74:	  0063	E5 30		        MOV     A,LED_DATA
+   75:	  0065	54 0F		        ANL     A,#0Fh
+   76:	  0067	90 00 80	        MOV     DPTR,#FONT
+   77:	  006A	93		        MOVC    A,@A+DPTR
+   78:	  006B	F5 80		        MOV     LED_PORT,A
+   79:	  006D	C2 A1		        CLR     LOW_NIBBLE
+   80:	  006F	22		        RET
+   81:	  0070			SHOW_HIGH:
+   82:	  0070	D2 A1		        SETB    LOW_NIBBLE
+   83:	  0072	E5 30		        MOV     A,LED_DATA
+   84:	  0074	C4		        SWAP    A
+   85:	  0075	54 0F		        ANL     A,#0Fh
+   86:	  0077	90 00 80	        MOV     DPTR,#FONT
+   87:	  007A	93		        MOVC    A,@A+DPTR
+   88:	  007B	F5 80		        MOV     LED_PORT,A
+   89:	  007D	C2 A0		        CLR     HIGH_NIBBLE
+   90:	  007F	22		        RET
+   91:	  0080	C0 F9 A4 B0	FONT:   DB      0C0h,0F9h,0A4h,0B0h,099h,092h,082h,0F8h
+	  0084	99 92 82 F8
+   92:	  0088	80 90 88 83	        DB      080h,090h,088h,083h,0A7h,0A1h,086h,08Eh
+	  008C	A7 A1 86 8E
+   93:				;-----------------------------------------------------------------------
+   94:	  0090			T1_ISR: ;Timer 1
+
+ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 3
+
+
+
+ Line  I  Addr  Code            Source
+
+   95:	  0090	75 8D 3C	        MOV     TH1,#3Ch   ; Timer 0 Interrupt will be generated
+   96:	  0093	75 8B B0	        MOV     TL1,#0B0h   ; for every 1mS
+   97:
+   98:	  0096	20 20 09	        JB START_RAM, T1_ELSE
+   99:	  0099	85 21 30	        MOV LED_DATA, TIME_RAM
+  100:	  009C	75 29 00	        MOV DELAY_1S, #00h
+  101:	  009F	D2 A2		        SETB BUZZER
+  102:
+  103:	  00A1	22		        RET
+  104:	  00A2			T1_ELSE:
+  105:	  00A2	12 00 BC	        LCALL TIME_1S
+  106:	  00A5	12 00 B1	        LCALL SET_BUZZER
+  107:	  00A8	85 21 30	        MOV LED_DATA, TIME_RAM
+  108:	  00AB	22		        RET
+  109:				;-----------------------------------------------------------------------
+  110:
+  111:	  00AC			INT0_ISR:
+  112:	  00AC	A9 20		        MOV R1, START_RAM
+  113:
+  114:	  00AE	22		INT0_ELSE: RET
+  115:
+  116:	  00AF			INT1_ISR:
+  117:
+  118:	  00AF	22				RET
+  119:	  00B0			UART_ISR:
+  120:	  00B0	22				RET
+  121:
+  122:				;================================= function ===================================================
+  123:
+  124:	  00B1			SET_BUZZER:
+  125:	  00B1	E5 21		        MOV A, TIME_RAM
+  126:	  00B3	B4 00 03	        CJNE A, #00h, TIME_RAM_not_EUQAL_TO_0
+  127:				        ;JNZ TIME_RAM, TIME_RAM_not_EUQAL_TO_0
+  128:	  00B6	C2 A2		        CLR BUZZER
+  129:	  00B8	22		        RET
+  130:
+  131:	  00B9			TIME_RAM_not_EUQAL_TO_0:
+  132:	  00B9	D2 A2		        SETB BUZZER
+  133:
+  134:	  00BB	22		        RET
+  135:
+  136:				;------------------------------------------------------------
+  137:	  00BC			TIME_1S:
+  138:	  00BC	A9 29		        MOV R1, DELAY_1S
+  139:	  00BE	B9 14 0A	        CJNE R1, #14h, DELAY1s_ELSE
+  140:
+  141:	  00C1	75 29 00	        MOV DELAY_1S, #00h
+  142:	  00C4	E5 21		        MOV A, TIME_RAM
+  143:	  00C6	60 05		        JZ  T1_RET
+  144:	  00C8	15 21		        DEC TIME_RAM
+  145:	  00CA	22		        RET
+  146:	  00CB			DELAY1s_ELSE:
+  147:	  00CB	05 29		        INC DELAY_1S
+  148:
+  149:	  00CD	22		T1_RET: RET
+  150:				;------------------------------------------------------------
+
+ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 4
+
+
+
+ Line  I  Addr  Code            Source
+
+  151:	  00CE			BUTTION_CLICK:
+  152:	  00CE	20 A3 08	        JB BUTTON_start, CBRET1
+  153:	  00D1	20 20 02	        JB START_RAM, WAIT_BUTTON_RELEASE
+  154:	  00D4	05 21		        INC TIME_RAM
+  155:	  00D6			WAIT_BUTTON_RELEASE:
+  156:	  00D6	30 A3 FD	        JNB BUTTON_start, WAIT_BUTTON_RELEASE
+  157:	  00D9			CBRET1:
+  158:
+  159:
+  160:	  00D9	20 A4 05	        JB BUTTON_Time, CBRET2
+  161:	  00DC	B2 20		        CPL START_RAM
+  162:	  00DE			WAIT_BUTTON_RELEASE2:
+  163:	  00DE	30 A4 FD	        JNB BUTTON_Time, WAIT_BUTTON_RELEASE2
+  164:	  00E1			CBRET2:
+  165:	  00E1	12 00 E5	        LCALL BUTTON_DELAY
+  166:	  00E4	22		        RET
+  167:				;------------------------------------------------------------
+  168:	  00E5			BUTTON_DELAY:
+  169:	  00E5	7E 1F		        MOV R6, #1Fh
+  170:	  00E7	7F FF		L1:     MOV R7, #0FFh
+  171:	  00E9	DF FE		L2:     DJNZ R7, L2
+  172:	  00EB	DE FA		        DJNZ R6, L1
+  173:
+  174:	  00ED	22		        RET
+  175:
+  176:				;------------------------------------------------------------
+  177:				        END
+
+
+
+
+
+                     register banks used:  ---
+
+                     1 error detected
+
+
+
+
+ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 5
+
+
+
+
+
+	       L I S T   O F   S Y M B O L S
+	       =============================
+
+
+SYMBOL				  TYPE     VALUE	LINE
+------------------------------------------------------------
+??ASEM_51			  NUMBER    8051
+??VERSION			  NUMBER    0130
+AC				  BIT	      D6
+ACC				  DATA	      E0
+B				  DATA	      F0
+BUTTION_CLICK			  CODE	    00CE	 151
+BUTTON_DELAY			  CODE	    00E5	 168
+BUTTON_START			  NUMBER    00A3	  12
+BUTTON_TIME			  NUMBER    00A4	  13
+BUZZER				  NUMBER    00A2	  17
+CBRET1				  CODE	    00D9	 157
+CBRET2				  CODE	    00E1	 164
+CY				  BIT	      D7
+DELAY1S_ELSE			  CODE	    00CB	 146
+DELAY_1S			  NUMBER    0029	  16
+DPH				  DATA	      83
+DPL				  DATA	      82
+EA				  BIT	      AF
+ES				  BIT	      AC
+ET0				  BIT	      A9
+ET1				  BIT	      AB
+EX0				  BIT	      A8
+EX1				  BIT	      AA
+EXTI0				  CODE	    0003
+EXTI1				  CODE	    0013
+F0				  BIT	      D5
+FONT				  CODE	    0080	  91
+HIGH_NIBBLE			  NUMBER    00A0	  10
+IE				  DATA	      A8
+IE0				  BIT	      89
+IE1				  BIT	      8B
+INT0				  BIT	      B2
+INT0_ELSE			  CODE	    00AE	 114
+INT0_ISR			  CODE	    00AC	 111
+INT1				  BIT	      B3
+INT1_ISR			  CODE	    00AF	 116
+IP				  DATA	      B8
+IT0				  BIT	      88
+IT1				  BIT	      8A
+L1				  CODE	    00E7	 170
+L2				  CODE	    00E9	 171
+LED_DATA			  NUMBER    0030	   6
+LED_PORT			  NUMBER    0080	   9
+LOOP				  CODE	    0051	  62
+LOW_NIBBLE			  NUMBER    00A1	  11
+NIBBLE				  NUMBER    0000	   7
+OV				  BIT	      D2
+P				  BIT	      D0
+P0				  DATA	      80
+P1				  DATA	      90
+
+ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 6
+
+
+
+SYMBOL				  TYPE     VALUE	LINE
+------------------------------------------------------------
+P2				  DATA	      A0
+P3				  DATA	      B0
+PCON				  DATA	      87
+PROG				  NUMBER    0000	  19
+PS				  BIT	      BC
+PSW				  DATA	      D0
+PT0				  BIT	      B9
+PT1				  BIT	      BB
+PX0				  BIT	      B8
+PX1				  BIT	      BA
+RB8				  BIT	      9A
+RD				  BIT	      B7
+REN				  BIT	      9C
+RESET				  CODE	    0000
+RI				  BIT	      98
+RS0				  BIT	      D3
+RS1				  BIT	      D4
+RXD				  BIT	      B0
+SBUF				  DATA	      99
+SCON				  DATA	      98
+SET_BUZZER			  CODE	    00B1	 124
+SHOW_HIGH			  CODE	    0070	  81
+SHOW_LOW			  CODE	    0061	  72
+SINT				  CODE	    0023
+SM0				  BIT	      9F
+SM1				  BIT	      9E
+SM2				  BIT	      9D
+SP				  DATA	      81
+START				  CODE	    0030	  40
+START_RAM			  NUMBER    0020	  15
+T0				  BIT	      B4
+T0_ISR				  CODE	    0056	  67
+T1				  BIT	      B5
+T1_ELSE				  CODE	    00A2	 104
+T1_ISR				  CODE	    0090	  94
+T1_RET				  CODE	    00CD	 149
+TB8				  BIT	      9B
+TCON				  DATA	      88
+TF0				  BIT	      8D
+TF1				  BIT	      8F
+TH0				  DATA	      8C
+TH1				  DATA	      8D
+TI				  BIT	      99
+TIMER0				  CODE	    000B
+TIMER1				  CODE	    001B
+TIME_1S				  CODE	    00BC	 137
+TIME_RAM			  NUMBER    0021	  14
+TIME_RAM_NOT_EUQAL_TO_0		  CODE	    00B9	 131
+TL0				  DATA	      8A
+TL1				  DATA	      8B
+TMOD				  DATA	      89
+TR0				  BIT	      8C
+TR1				  BIT	      8E
+TXD				  BIT	      B1
+UART_ISR			  CODE	    00B0	 119
+WAIT_BUTTON_RELEASE		  CODE	    00D6	 155
+
+ASEM-51 V1.3                                         Copyright (c) 2002 by W.W. Heinz                                         PAGE 7
+
+
+
+SYMBOL				  TYPE     VALUE	LINE
+------------------------------------------------------------
+WAIT_BUTTON_RELEASE2		  CODE	    00DE	 162
+WR				  BIT	      B6

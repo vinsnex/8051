@@ -1,0 +1,113 @@
+RANDOM EQU 2Fh
+SELECT  EQU 2Eh
+COUNT   EQU 2Dh
+RANDLESS EQU 2Ch
+GAME_LED EQU P2
+INT0_ISR_PIN EQU P3.2
+COUNT_LED EQU P0
+ORG	0000h
+	SJMP	START
+;
+;Interrupt Vector Table
+	ORG	0003h
+	LCALL	INT0_ISR
+	RETI
+	ORG	000Bh
+	LCALL	T0_ISR
+	RETI
+	ORG	0013h
+	LCALL	INT1_ISR
+	RETI
+	ORG	001Bh
+	LCALL	T1_ISR
+	RETI
+	ORG	0023h
+	LCALL	UART_ISR
+	RETI
+;
+	ORG	0030h
+START:
+	MOV RANDOM, #00h
+	MOV COUNT, #00h
+	MOV SELECT,  #01h
+	SETB	IT0		
+	SETB	EX0
+	SETB	IT1		
+	SETB	EX1
+	SETB	EA
+	;SETB INT0_ISR_PIN
+LOOP:
+	LCALL Random_function
+	MOV    RANDLESS, RANDOM
+	MOV A, RANDOM
+	ORL A, SELECT
+	CPL A
+	MOV GAME_LED, A
+	LCALL DELAY
+	LCALL DELAY
+
+DONE:	SJMP	LOOP
+;		
+INT0_ISR:
+
+	MOV A, SELECT
+	RL A
+	MOV SELECT, A
+	;MOV A, RANDOM
+	ORL A, RANDLESS
+	CPL A
+	MOV GAME_LED, A
+	RET
+T0_ISR:
+;	Service Routine for Timer 0 Interrupt
+	RET
+INT1_ISR:
+	MOV A, SELECT
+	ANL A, RANDLESS
+	JZ NOTSELECT ;return
+	MOV A, SELECT
+	XRL A, RANDLESS
+	MOV RANDLESS, A
+	CPL A
+	MOV GAME_LED, A
+	;is select COUNT + 1
+	MOV A, COUNT
+	ADD A, #01h
+	MOV COUNT, A
+	CPL A
+	MOV COUNT_LED, A
+
+
+NOTSELECT: 
+	RET
+T1_ISR:
+;       Service Routine for Timer 1 Interrupt
+	RET
+UART_ISR:
+;	Service Routine for UART Interrupt
+	RET
+;
+
+
+
+;---------------------------function-------------------------
+DELAY:  MOV    R0, #0Fh
+LOP1:   MOV    R1, #0FFh
+LOP2:	MOV    R2, #0FFh
+LOP3:   DJNZ   R2, LOP3
+		DJNZ   R1, LOP2
+		DJNZ   R0, LOP1
+
+        RET
+
+Random_function:
+	MOV B, #05h
+	MOV A, RANDOM
+	MUL AB
+	ADD A, #03h
+	MOV RANDOM, A
+RET
+
+;------------------------------------------------------------
+
+	END

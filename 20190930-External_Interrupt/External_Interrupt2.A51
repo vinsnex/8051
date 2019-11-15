@@ -1,0 +1,98 @@
+DATA1 EQU 2Fh
+DATA2 EQU 2Eh
+LED    EQU P2
+
+ORG	0000h
+	SJMP	START
+;
+;Interrupt Vector Table
+	ORG	0003h
+	LCALL	INT0_ISR
+	RETI
+	ORG	000Bh
+	LCALL	T0_ISR
+	RETI
+	ORG	0013h
+	LCALL	INT1_ISR
+	RETI
+	ORG	001Bh
+	LCALL	T1_ISR
+	RETI
+	ORG	0023h
+	LCALL	UART_ISR
+	RETI
+;
+	ORG	0030h
+START:
+	MOV DATA1, #01h
+	MOV DATA2, #80h
+	SETB	IT0		
+	SETB	EX0
+	SETB	IT1		
+	SETB	EX1
+	SETB	EA
+	SETB    PX1
+	;SETB INT0_ISR_PIN
+LOOP:
+	MOV A, DATA1
+	RL A
+	MOV DATA1, A
+	CPL A
+	MOV LED, A
+	LCALL DELAY
+	LCALL DELAY
+
+DONE:	SJMP	LOOP
+;		
+INT0_ISR:
+	MOV LED, #00h
+	LCALL DELAY
+	MOV LED, #0FFh
+	LCALL DELAY
+	MOV LED, #00h
+	LCALL DELAY
+	MOV LED, #0FFh
+	LCALL DELAY
+	MOV LED, #00h
+	LCALL DELAY
+	MOV LED, #0FFh
+	LCALL DELAY
+	RET
+T0_ISR:
+;	Service Routine for Timer 0 Interrupt
+	RET
+INT1_ISR:
+	MOV A, #80h
+	MOV R3, #08h
+JP:
+	RR A
+	CPL A
+	MOV LED, A
+	CPL A
+	LCALL DELAY
+	DJNZ R3, JP
+	RET
+
+NOTSELECT: 
+	RET
+T1_ISR:
+;       Service Routine for Timer 1 Interrupt
+	RET
+UART_ISR:
+;	Service Routine for UART Interrupt
+	RET
+;
+
+
+
+;---------------------------function-------------------------
+DELAY:  MOV    R0, #0FFh
+LOP1:   MOV    R1, #0FFh
+LOP2:	DJNZ   R1, LOP2
+		DJNZ   R0, LOP1
+
+        RET
+
+;------------------------------------------------------------
+
+	END

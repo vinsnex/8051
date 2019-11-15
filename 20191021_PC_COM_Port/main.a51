@@ -1,0 +1,150 @@
+; Example program 05: UART-RS232
+; Chin-Shiuh Shieh
+; 2003-03-09
+;
+; Memory Allocation
+UART_BUSY		EQU		00h
+; Pin Assignment
+LED_PORT		EQU		P2
+DIV_SWITCH      EQU		P1
+SAVE_DATA       EQU 	30h
+SAVE_D2       EQU 	29h
+;
+PROG	EQU		0000h
+		ORG		PROG+0000h
+		SJMP		START
+;Interrupt Vector Table
+		ORG		PROG+0003h
+		LCALL	INT0_ISR
+		RETI
+		ORG		PROG+000Bh
+		LCALL	T0_ISR
+		RETI
+		ORG		PROG+0013h
+		LCALL	INT1_ISR
+		RETI
+		ORG		PROG+001Bh
+		LCALL	T1_ISR
+		RETI
+		ORG		PROG+0023h
+		LCALL	UART_ISR
+		RETI
+;
+		ORG		PROG+0030h
+START:
+		CLR		UART_BUSY
+        MOV     TMOD,#00100001b	; Timer1 in Mode 2, Timer0 in Mode 1
+        MOV     TH1, #0FDh		; Baud Rate = 9600 bps at 11.0592MHz
+        MOV     SCON,#01010000b	; UART in Mode 1
+		MOV     DIV_SWITCH, #0FFh
+		SETB	ES				; Enable UART Interrupt
+		SETB	EA				; Enable Interrupt
+		SETB	TR1				; Start Timer 1
+		MOV		A,#'H'
+		CALL	UART_PUTC
+		MOV		A,#'e'
+		CALL	UART_PUTC
+		MOV		A,#'l'
+		CALL	UART_PUTC
+		MOV		A,#'l'
+		CALL	UART_PUTC
+		MOV		A,#'o'
+		CALL	UART_PUTC
+		MOV		A,#','
+		CALL	UART_PUTC
+		MOV		A,#' '
+		CALL	UART_PUTC
+		MOV		A,#'8'
+		CALL	UART_PUTC
+		MOV		A,#'0'
+		CALL	UART_PUTC
+		MOV		A,#'5'
+		CALL	UART_PUTC
+		MOV		A,#'1'
+		CALL	UART_PUTC
+		MOV		A,#'!'
+		CALL	UART_PUTC
+		LCALL UART_PUTC_WRAP
+DONE:	
+	;MOV SAVE_DATA,#1
+	;LCALL UART_SAVE_DATA
+	;LCALL UART_PUTC_WRAP
+
+	;SJMP	DONE
+	MOV A, DIV_SWITCH
+	CPL A
+	CJNE A, SAVE_D2, SAVE_D2_TRUE
+	CLR P0.7
+	SJMP DONE_P
+SAVE_D2_TRUE:
+	SETB P0.7
+	MOV SAVE_D2, A
+	MOV 20h, A
+;////////////////////////////////////////////////////
+	
+	MOV R1, #03h
+FOR1:
+	MOV A, 20h
+	MOV B, #0Ah
+	DIV AB
+	MOV 20h, A
+	MOV SAVE_DATA, B
+
+	PUSH B
+	DJNZ R1, FOR1
+
+
+	MOV R1, #03h
+FOR2:
+	POP SAVE_DATA
+	LCALL UART_SAVE_DATA
+	DJNZ R1, FOR2
+	LCALL UART_PUTC_WRAP
+
+
+DONE_P:
+	SJMP	DONE
+
+INT0_ISR:
+		RET
+T0_ISR:
+        RET
+INT1_ISR:
+		RET
+T1_ISR:
+		RET
+UART_ISR:
+        JB      RI,RECEIVED
+TRANSMITTED:
+		CLR		UART_BUSY
+        CLR     TI
+        RET
+RECEIVED:
+		MOV		A,SBUF
+		CPL		A
+    	MOV LED_PORT,A
+		CLR     RI
+		RET
+;
+UART_PUTC:
+		JB		UART_BUSY,UART_PUTC
+		SETB	UART_BUSY
+		MOV		SBUF,A
+		RET
+
+
+UART_PUTC_WRAP:
+	MOV		A,#0Ah		; Line Feed
+	CALL	UART_PUTC
+	MOV		A,#0Dh		; Cartage Return
+	CALL	UART_PUTC
+	RET
+
+UART_SAVE_DATA:
+	MOV A, SAVE_DATA
+	ADD A, #48
+	LCALL UART_PUTC
+	
+	RET
+
+END

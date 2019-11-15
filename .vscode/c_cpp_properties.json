@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "C51",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "D:/Code/school/Sophomore/8051/Tool/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "compilerPath": "C:\\Program Files\\SDCC\\bin\\sdcc.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}

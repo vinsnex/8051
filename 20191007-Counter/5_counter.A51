@@ -1,0 +1,77 @@
+; Example Program 03: External Counter
+; Chin-Shiuh Shieh
+; 2003-03-08
+;
+; Pin Assignment
+LED_PORT	EQU		P2
+BUZZER		EQU     P1.7
+;
+PROG	EQU		0000h
+		ORG		PROG+0000h
+		JMP		START
+;Interrupt Vector Table
+		ORG		PROG+0003h
+		LCALL	INT0_ISR
+		RETI
+		ORG		PROG+000Bh
+		LCALL	T0_ISR
+		RETI
+		ORG		PROG+0013h
+		LCALL	INT1_ISR
+		RETI
+		ORG		PROG+001Bh
+		LCALL	T1_ISR
+		RETI
+		ORG		PROG+0023h
+		LCALL	UART_ISR
+		RETI
+;
+		ORG		PROG+0030h
+START:	MOV		TH0,#00h
+		MOV		TL0,#00h
+		MOV		TH1,#00h
+		MOV		TL1,#00h
+		MOV		TMOD,#00010101b	; Set Timer/Counter 0 to be 16-bit External Counter
+		SETB	TR0				; Turn on Counter 0
+		SETB	ET1
+		SETB	TR1
+		SETB 	EA
+		SETB 	BUZZER
+LOOP:	
+		
+		MOV		A,TL0
+		CPL		A
+		MOV		LED_PORT,A
+		SJMP	LOOP
+;
+INT0_ISR:
+		RET
+T0_ISR:
+		RET
+INT1_ISR:
+		RET
+T1_ISR:;time1
+		MOV A, TL0
+		ANL A, #07h
+		MOV TL0, A
+
+		MOV A, TL0
+		MOV DPTR, #THDATA
+		MOVC A, @A+DPTR
+		MOV TH1, A
+
+		MOV A, TL0
+		MOV DPTR, #TLDATA
+		MOVC A, @A + DPTR
+		MOV TL1, A
+
+		CPL BUZZER
+		;CLR BUZZER
+		RET
+UART_ISR:
+		RET
+
+THDATA:   DB      0FCh,0FCh,0FCh,0FDh,0FDh,0FDh,0FEh,0FEh
+
+TLDATA:   DB      044h,0ACh,009h,034h,082h,0C8h,006h,006h
+	END
