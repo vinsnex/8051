@@ -1,9 +1,15 @@
 // Keypad functions (with 74C922) by Chin-Shiuh Shieh on 2011-04-04
+#ifndef KEYPAD_DO
+	#define KEYPAD_DO P1
+#endif
 
-#define KEYPAD_DO P1
-#define KEYPAD_DA P1_4
+#ifndef KEYPAD_DA
+	#define KEYPAD_DA P1_4
+#endif
 
-#define KEYPAD_NULL 0x10
+#ifndef KEYPAD_NULL
+	#define KEYPAD_NULL 0x10
+#endif
 
 // Function Prototypes
 unsigned char keypad_get_key(void);

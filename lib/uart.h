@@ -4,16 +4,20 @@
 // Comment un-used functions to reduce code size
 
 // UART function prototypes
+#ifndef UART_H
+#define UART_H
+
 void uart_initialize(void);	// Set UART Baud Rate to 9600 bps
 void uart_put_char(char c);	// Put Character to UART
-char uart_check_char(void);
 char uart_get_char(void);	// Get Character from UART
 char uart_get_char_echo(void);	// Get Character from UART with Echo, Require uart_put_char()
 void uart_put_string(char *s);	// Put String to UART, Require uart_put_char()
+void uart_put_string_line(char *s);	// Put String to UART, Require uart_put_char()
 void uart_get_string(char *s);	// Get String from UART, Require uart_get_char_echo()
 void uart_i2s(int i,char *s);	// Convert Integer to String
 int  uart_s2i(char *s);		// Convert String to Integer
 void uart_put_integer(int i);	// Put Integer to UART, Require uart_i2s(),uart_put_string()
+void uart_put_integer_line(int i);
 int  uart_get_integer();	// Get Integer from UART, Require uart_get_string(),uart_s2i()
 void uart_put_byte(unsigned char byte_data);
 void uart_put_word(unsigned int word_data);
@@ -54,6 +58,12 @@ void uart_put_string(char *s)	// Put String to UART, Require uart_put_char()
 while(*s!=0){uart_put_char(*s);s++;}
 }
 
+void uart_put_string_line(char *s)	// Put String to UART, Require uart_put_char()
+{
+    uart_put_string(s);
+    uart_put_char('\n');
+}
+
 void uart_get_string(char *s)	// Get String from UART, Require uart_get_char_echo()
 {
 while(((*s)=uart_get_char())!=13)s++;
@@ -86,6 +96,12 @@ char s[7];
 uart_i2s(i,s);uart_put_string(s);
 }
 
+void uart_put_integer_line(int i){
+    uart_put_integer(i);
+    uart_put_char('\n');
+}
+
+
 int uart_get_integer()		// Get Integer from UART, Require uart_get_string(),uart_s2i()
 {
 char s[7];
@@ -115,3 +131,6 @@ void uart_put_float(float float_data, int Decimal_len){
         uart_put_integer((int)float_data%10);
     }
 }
+
+#endif
+
